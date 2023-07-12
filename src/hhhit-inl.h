@@ -58,6 +58,82 @@ inline double logPvalue(float x, double a[]) {
          (h < -2.5) ? -exp(-exp(-h)) : log((double(1.0) - exp(-exp(-h))));
 }
 
+const size_t F = sizeof(__m256) / sizeof(float);
+const size_t QF = 4 * F;
+inline float ExtractSum(__m256 a)
+        {
+            float __attribute__ ((aligned(32))) _a[8];
+            _mm256_store_ps(_a, _mm256_hadd_ps(_mm256_hadd_ps(a, _mm256_setzero_ps()), _mm256_setzero_ps()));
+            return _a[0] + _a[4];
+        }
+
+inline size_t AlignLo(size_t size, size_t align)
+    {
+        return size & ~(align - 1);
+    }
+
+ template <bool align> inline void NeuralProductSum(const float * a, const float * b, size_t offset, __m256 & sum)
+        {
+            __m256 _a = _mm256_loadu_ps(a + offset);
+            __m256 _b = _mm256_loadu_ps(b + offset);
+            sum = _mm256_fmadd_ps(_a, _b, sum);
+        }
+
+ template <bool align>  inline void NeuralProductSum(const float * a, const float * b, size_t size, float* sum)
+        {
+
+            *sum = 0;
+            size_t partialAlignedSize = AlignLo(size, F);
+            size_t fullAlignedSize = AlignLo(size, QF);
+            size_t i = 0;
+            if (partialAlignedSize)
+            {
+                __m256 sums[4] = { _mm256_setzero_ps(), _mm256_setzero_ps(), _mm256_setzero_ps(), _mm256_setzero_ps() };
+                if (fullAlignedSize)
+                {
+                    for (; i < fullAlignedSize; i += QF)
+                    {
+                        NeuralProductSum<align>(a, b, i + F * 0, sums[0]);
+                        NeuralProductSum<align>(a, b, i + F * 1, sums[1]);
+                        NeuralProductSum<align>(a, b, i + F * 2, sums[2]);
+                        NeuralProductSum<align>(a, b, i + F * 3, sums[3]);
+                    }
+                    sums[0] = _mm256_add_ps(_mm256_add_ps(sums[0], sums[1]), _mm256_add_ps(sums[2], sums[3]));
+                }
+                for (; i < partialAlignedSize; i += F)
+                    NeuralProductSum<align>(a, b, i, sums[0]);
+                *sum += ExtractSum(sums[0]);
+            }
+            for (; i < size; ++i)
+                *sum += a[i] * b[i];
+        }
+
+      inline double reduce_vector2(__m256d input) {
+        __m256d temp = _mm256_hadd_pd(input, input);
+        __m128d sum_high = _mm256_extractf128_pd(temp, 1);
+        __m128d result = _mm_add_pd(sum_high, _mm256_castpd256_pd128(temp));
+        return ((double*)&result)[0];
+      }
+
+      inline double dot_product(const double *a, const double *b, size_t N) {
+        __m256d sum_vec = _mm256_set_pd(0.0, 0.0, 0.0, 0.0);
+
+        /* Add up partial dot-products in blocks of 256 bits */
+        for(size_t ii = 0; ii < N/4; ++ii) {
+          __m256d x = _mm256_loadu_pd(a+4*ii);
+          __m256d y = _mm256_loadu_pd(b+4*ii);
+          __m256d z = _mm256_mul_pd(x,y);
+          sum_vec = _mm256_add_pd(sum_vec, z);
+        }
+
+        /* Find the partial dot-product for the remaining elements after
+        * dealing with all 256-bit blocks. */
+        double final = 0.0;
+        for(size_t ii = N-N%4; ii < N; ++ii)
+          final += a[ii] * b[ii];
+
+        return reduce_vector2(sum_vec) + final;
+      }
 inline float ScalarProd20(const float* qi, const float* tj) {
     
 //#ifdef AVX
@@ -112,13 +188,20 @@ inline float ScalarProd20(const float* qi, const float* tj) {
     _mm_store_ss(&res, R);
     return res;
 #endif
-//#endif
-    return tj[0] * qi[0] + tj[1] * qi[1] + tj[2] * qi[2] + tj[3] * qi[3]
-         + tj[4] * qi[4] + tj[5] * qi[5] + tj[6] * qi[6] + tj[7] * qi[7]
-         + tj[8] * qi[8] + tj[9] * qi[9] + tj[10] * qi[10] + tj[11] * qi[11]
-         + tj[12] * qi[12] + tj[13] * qi[13] + tj[14] * qi[14]
-         + tj[15] * qi[15] + tj[16] * qi[16] + tj[17] * qi[17]
-         + tj[18] * qi[18] + tj[19] * qi[19];
+// float __attribute__((aligned(32))) res;
+// simd_float R = ScalarProd20Vec((simd_float *) qi,(simd_float *) tj);
+// _mm256_store_ps(&res, R);
+// return res;
+    float sum;
+    NeuralProductSum<false>(tj, qi, 20, &sum);
+    return sum;
+
+    // return tj[0] * qi[0] + tj[1] * qi[1] + tj[2] * qi[2] + tj[3] * qi[3]
+    //      + tj[4] * qi[4] + tj[5] * qi[5] + tj[6] * qi[6] + tj[7] * qi[7]
+    //      + tj[8] * qi[8] + tj[9] * qi[9] + tj[10] * qi[10] + tj[11] * qi[11]
+    //      + tj[12] * qi[12] + tj[13] * qi[13] + tj[14] * qi[14]
+    //      + tj[15] * qi[15] + tj[16] * qi[16] + tj[17] * qi[17]
+    //      + tj[18] * qi[18] + tj[19] * qi[19];
 }
 
 // Calculate score between columns i and j of two HMMs (query and template)

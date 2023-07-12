@@ -205,8 +205,28 @@ int Prefilter::swStripedByte(unsigned char *querySeq, int queryLength,
 
     }
 
+    vTemp = _mm256_srli_si256     (vMaxScore, 32);
+   vMaxScore = _mm256_max_epu8   (vMaxScore, vTemp);
+   
+    vTemp = _mm256_srli_si256   (vMaxScore, 16);
+    vMaxScore = _mm256_max_epu8  (vMaxScore, vTemp);
 
-    int score = simd_hmax((unsigned char *) &vMaxScore, element_count);
+    vTemp = _mm256_srli_si256   (vMaxScore, 8);
+    vMaxScore = _mm256_max_epu8  (vMaxScore, vTemp);
+
+    vTemp = _mm256_srli_si256   (vMaxScore, 4);
+    vMaxScore = _mm256_max_epu8  (vMaxScore, vTemp);
+
+    vTemp = _mm256_srli_si256   (vMaxScore, 2);
+    vMaxScore = _mm256_max_epu8  (vMaxScore, vTemp);
+
+    vTemp = _mm256_srli_si256   (vMaxScore, 1);
+    vMaxScore = _mm256_max_epu8  (vMaxScore, vTemp);
+
+    /* store in temporary variable */
+    int score = _mm256_extract_epi8  (vMaxScore, 0);
+    score = score & 0x00ff;
+    // int score = simd_hmax((unsigned char *) &vMaxScore, element_count);
 
     return score;
 }
@@ -268,7 +288,28 @@ int Prefilter::ungapped_sse_score(const unsigned char* query_profile,
       S = simdi_load(s_prev_it++);
     }
   }
-  int score = simd_hmax((unsigned char *) &Smax, element_count);
+    S = _mm256_srli_si256     (Smax, 32);
+   Smax = _mm256_max_epu8   (Smax, S);
+   
+    S = _mm256_srli_si256   (Smax, 16);
+    Smax = _mm256_max_epu8  (Smax, S);
+
+    S = _mm256_srli_si256   (Smax, 8);
+    Smax = _mm256_max_epu8  (Smax, S);
+
+    S = _mm256_srli_si256   (Smax, 4);
+    Smax = _mm256_max_epu8  (Smax, S);
+
+    S = _mm256_srli_si256   (Smax, 2);
+    Smax = _mm256_max_epu8  (Smax, S);
+
+    S = _mm256_srli_si256   (Smax, 1);
+    Smax = _mm256_max_epu8  (Smax, S);
+
+    /* store in temporary variable */
+    int score = _mm256_extract_epi8  (Smax, 0);
+    score = score & 0x00ff;
+  // int score = simd_hmax((unsigned char *) &Smax, element_count);
 
   /* return largest score */
   return score;

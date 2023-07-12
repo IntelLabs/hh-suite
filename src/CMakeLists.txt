@@ -9,15 +9,15 @@ set(NATIVE_ARCH 1 CACHE BOOL "Assume native architecture for SIMD. Use one of th
 set(EXE_SUFFIX "" CACHE STRING "Optional executable suffix, can be used to to indicate SIMD level corresponding to manually specified build flags.")
 
 # see https://wiki.debian.org/ArchitectureSpecificsMemo for char signedness
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -fsigned-char")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17 -fsigned-char")
 
 # SIMD instruction sets support
 set(ARCH_FLAGS "")
 if (HAVE_AVX2)
     if (CMAKE_COMPILER_IS_CLANG)
-        set(ARCH_FLAGS "${ARCH_FLAGS} -mavx2")
+        set(ARCH_FLAGS "${ARCH_FLAGS} -march=native")
     else ()
-        set(ARCH_FLAGS "${ARCH_FLAGS} -mavx2 -Wa,-q")
+        set(ARCH_FLAGS "${ARCH_FLAGS}  -march=native -Wa,-q")
     endif ()
     set(X64 1)
 elseif (HAVE_SSE4_1)
@@ -63,7 +63,7 @@ if (NATIVE_ARCH AND (ARCH_FLAGS STREQUAL ""))
         if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.0.0")
             set(ARCH_FLAGS "${SSE_FLAGS}")
         else()
-            set(ARCH_FLAGS "-march=native")
+            set(ARCH_FLAGS "-march=native -O3 -liomp5")
         endif()
     else ()
         if (PPC64 OR ARM)
@@ -80,7 +80,8 @@ endif ()
 
 if (CMAKE_COMPILER_IS_ICC)
     # default -fp-model results in inconsistent results in profile search
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fp-model precise")
+    message(${CMAKE_CXX_FLAGS})
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -o3 -fp-model fast=2 -qopenmp -lmkl_rt")
 endif ()
 
 if (X86)

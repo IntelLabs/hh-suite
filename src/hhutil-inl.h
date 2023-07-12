@@ -415,16 +415,24 @@ inline simd_float simdf32_fpow2(simd_float X) {
     //            + dx*(0.0558282f            // Speed: 2.3E-8s
     //            + dx*(0.00898898f
     //            + dx* 0.00187682f ))));
-    X = simdf32_mul(dx, CONST32_A);
-    X = simdf32_add(CONST32_B, X);  // add constant B
-    X = simdf32_mul(dx, X);
-    X = simdf32_add(CONST32_C, X);  // add constant C
-    X = simdf32_mul(dx, X);
-    X = simdf32_add(CONST32_D, X);  // add constant D
-    X = simdf32_mul(dx, X);
-    X = simdf32_add(CONST32_E, X);  // add constant E
-    X = simdf32_mul(dx, X);
-    X = simdf32_add(X, CONST32_1f); // add 1.0f
+    // X = simdf32_mul(dx, CONST32_A);
+    // X = simdf32_add(CONST32_B, X);  // add constant B
+    // X = simdf32_mul(dx, X);
+    // X = simdf32_add(CONST32_C, X);  // add constant C
+    
+    // X = simdf32_mul(dx, X);
+    // X = simdf32_add(CONST32_D, X);  // add constant D
+    
+    // X = simdf32_mul(dx, X);
+    // X = simdf32_add(CONST32_E, X);  // add constant E
+   
+    // X = simdf32_mul(dx, X);
+    // X = simdf32_add(X, CONST32_1f); // add 1.0f
+    X = _mm256_fmadd_ps(dx, CONST32_A, CONST32_B);
+    X = _mm256_fmadd_ps(dx, X, CONST32_C);
+    X = _mm256_fmadd_ps(dx, X, CONST32_D);
+    X = _mm256_fmadd_ps(dx, X, CONST32_E);
+    X = _mm256_fmadd_ps(dx, X, CONST32_1f);
 
     simd_int lxExp = simdi32_slli(lx, 23); // add integer power of 2 to exponent
 
@@ -493,18 +501,29 @@ inline simd_float simdf32_flog2(simd_float X) {
   R = simdf32_mul(R, X);                   // R = (((a*X+b)*X+c)*X+d)*X
   R = simdf32_add(R, CONST32_E);           // R = (((a*X+b)*X+c)*X+d)*X+e
   R = simdf32_mul(R, X);                   // R = ((((a*X+b)*X+c)*X+d)*X+e)*X ~ log2(1+X) !!
-  R = simdf32_add(R, simdi32_i2f(E));  // convert integer exponent to float and add to mantisse
+  R = simdf32_add(R, simdi32_i2f(E));  // convert integer exponent to float and add to mantiss
+  // R = _mm256_fmadd_ps(X, CONST32_A, R);
+  // R = _mm256_fmadd_ps(R, X, CONST32_C);
+  // R = _mm256_fmadd_ps(R, X, CONST32_D);
+  // R = _mm256_fmadd_ps(R, X, CONST32_E);
   return R;
 
 }
 
+// #define LOG_POLY_DEGREE 4
+// #define POLY0(x, c0) simdf32_set(c0)
+// #define POLY1(x, c0, c1) simdf32_add(simdf32_mul(POLY0(x, c1), x), simdf32_set(c0))
+// #define POLY2(x, c0, c1, c2) simdf32_add(simdf32_mul(POLY1(x, c1, c2), x), simdf32_set(c0))
+// #define POLY3(x, c0, c1, c2, c3) simdf32_add(simdf32_mul(POLY2(x, c1, c2, c3), x), simdf32_set(c0))
+// #define POLY4(x, c0, c1, c2, c3, c4) simdf32_add(simdf32_mul(POLY3(x, c1, c2, c3, c4), x), simdf32_set(c0))
+// #define POLY5(x, c0, c1, c2, c3, c4, c5) simdf32_add(simdf32_mul(POLY4(x, c1, c2, c3, c4, c5), x), simdf32_set(c0))
 #define LOG_POLY_DEGREE 4
 #define POLY0(x, c0) simdf32_set(c0)
-#define POLY1(x, c0, c1) simdf32_add(simdf32_mul(POLY0(x, c1), x), simdf32_set(c0))
-#define POLY2(x, c0, c1, c2) simdf32_add(simdf32_mul(POLY1(x, c1, c2), x), simdf32_set(c0))
-#define POLY3(x, c0, c1, c2, c3) simdf32_add(simdf32_mul(POLY2(x, c1, c2, c3), x), simdf32_set(c0))
-#define POLY4(x, c0, c1, c2, c3, c4) simdf32_add(simdf32_mul(POLY3(x, c1, c2, c3, c4), x), simdf32_set(c0))
-#define POLY5(x, c0, c1, c2, c3, c4, c5) simdf32_add(simdf32_mul(POLY4(x, c1, c2, c3, c4, c5), x), simdf32_set(c0))
+#define POLY1(x, c0, c1) _mm256_fmadd_ps(POLY0(x, c1), x, simdf32_set(c0)) 
+#define POLY2(x, c0, c1, c2) _mm256_fmadd_ps(POLY1(x, c1, c2), x, simdf32_set(c0)) 
+#define POLY3(x, c0, c1, c2, c3) _mm256_fmadd_ps(POLY2(x, c1, c2, c3), x, simdf32_set(c0))
+#define POLY4(x, c0, c1, c2, c3, c4) _mm256_fmadd_ps(POLY3(x, c1, c2, c3, c4), x, simdf32_set(c0)) 
+#define POLY5(x, c0, c1, c2, c3, c4, c5) _mm256_fmadd_ps(POLY4(x, c1, c2, c3, c4, c5), x, simdf32_set(c0))
 
 inline simd_float log2f4(simd_float x)
 {
@@ -535,9 +554,10 @@ inline simd_float log2f4(simd_float x)
 #endif
 
     /* This effectively increases the polynomial degree by one, but ensures that log2(1) == 0*/
-    p = simdf32_mul(p, simdf32_sub(m, one));
+    // p = 
 
-    return simdf32_add(p, e);
+    // return simdf32_add(simdf32_mul(p, simdf32_sub(m, one)), e);
+    return _mm256_fmadd_ps(p, simdf32_sub(m, one), e);
 }
 
 //// Perform log-sum-exp calculation with six SIMD variables
