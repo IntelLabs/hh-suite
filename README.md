@@ -1,3 +1,24 @@
+# compilation and setup guide of HH-suite3 optimized on Intel Xeon CPU
+
+This repo is modified based on AVX2/AVX512 intrinsics to enable acceleration on Intel Xeon CPU.
+Please follow the following lines:
+
+## install oneAPI HPC Toolkit
+
+[Guidelines of Intel oneAPI HPC Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html)
+
+## configure and compile
+
+```
+    % source <intel-oneapi>/setvars.sh
+    % mkdir build && cd build
+    % cmake -DCMAKE_INSTALL_PREFIX=`pwd`/release -DCMAKE_CXX_COMPILER="icc" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=icelake-server" ..
+    % make && make install
+    % ./release/bin/hhblits -h
+```
+
+# The README information of original repo is kept in the following lines:
+
 # HH-suite3 for sensitive sequence searching
 
 (C) Johannes Soeding, Markus Meier, Martin Steinegger, Milot Mirdita, Michael Remmert, Andreas Hauser, Andreas Biegert
