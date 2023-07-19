@@ -7,14 +7,14 @@ Please follow the following lines:
 
 [Guidelines of Intel oneAPI HPC Toolkit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html)
 
-## configure and compile
+## Configure and compile the repo
 
-```
-    % source <intel-oneapi>/setvars.sh
-    % mkdir build && cd build
-    % cmake -DCMAKE_INSTALL_PREFIX=`pwd`/release -DCMAKE_CXX_COMPILER="icc" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=icelake-server" ..
-    % make && make install
-    % ./release/bin/hhblits -h
+```bash
+source <intel-oneapi>/setvars.sh
+mkdir build && cd build
+cmake -DCMAKE_INSTALL_PREFIX=`pwd`/release -DCMAKE_CXX_COMPILER="icc" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=icelake-server" ..
+make && make install
+./release/bin/hhblits -h
 ```
 
 # The README information of original repo is kept in the following lines:
