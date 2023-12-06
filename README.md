@@ -12,7 +12,7 @@ Please follow the following lines:
 ```bash
 source <intel-oneapi>/setvars.sh
 mkdir build && cd build
-cmake -DCMAKE_INSTALL_PREFIX=`pwd`/release -DCMAKE_CXX_COMPILER="icc" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=icelake-server" ..
+cmake -DCMAKE_INSTALL_PREFIX=`pwd`/release -DCMAKE_CXX_COMPILER="icpx" -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=icelake-server" ..
 make && make install
 ./release/bin/hhblits -h
 ```
