@@ -156,8 +156,27 @@ inline float ScalarProd20(const float* qi, const float* tj) {
 //  _mm256_store_ps(&res, R);
 //  return res;
 //#else
+#if 1
+    float __attribute__((aligned(32))) res;
 
+    __m256 zero256 = _mm256_setzero_ps();
+    __m256 Qi0 = _mm256_loadu_ps(qi);
+    __m256 Tj0 = _mm256_loadu_ps(tj);
+    __m256 P0 = _mm256_mul_ps(Qi0, Tj0);
+    __m256 Qi1 = _mm256_loadu_ps(qi + 8);
+    __m256 Tj1 = _mm256_loadu_ps(tj + 8);
+    __m256 P1 = _mm256_fmadd_ps(Qi1, Tj1, P0);
+    __m256 Qi2 = _mm256_mask_loadu_ps(zero256, 0xf, qi + 16);
+    __m256 Tj2 = _mm256_mask_loadu_ps(zero256, 0xf, tj + 16);
+    __m256 P2 = _mm256_fmadd_ps(Qi2, Tj2, P1);
+    __m256 P = _mm256_hadd_ps(P2, zero256);
+    P = _mm256_hadd_ps(P, zero256);
+    float  __attribute__((aligned(32))) temp[8];
+    _mm256_store_ps(temp, P);
+    res = temp[0] + temp[4];
 
+    return res;
+#else
 #ifdef SSE
     float __attribute__((aligned(16))) res;
     __m128 P; // query 128bit SSE2 register holding 4 floats
@@ -188,20 +207,7 @@ inline float ScalarProd20(const float* qi, const float* tj) {
     _mm_store_ss(&res, R);
     return res;
 #endif
-// float __attribute__((aligned(32))) res;
-// simd_float R = ScalarProd20Vec((simd_float *) qi,(simd_float *) tj);
-// _mm256_store_ps(&res, R);
-// return res;
-    float sum;
-    NeuralProductSum<false>(tj, qi, 20, &sum);
-    return sum;
-
-    // return tj[0] * qi[0] + tj[1] * qi[1] + tj[2] * qi[2] + tj[3] * qi[3]
-    //      + tj[4] * qi[4] + tj[5] * qi[5] + tj[6] * qi[6] + tj[7] * qi[7]
-    //      + tj[8] * qi[8] + tj[9] * qi[9] + tj[10] * qi[10] + tj[11] * qi[11]
-    //      + tj[12] * qi[12] + tj[13] * qi[13] + tj[14] * qi[14]
-    //      + tj[15] * qi[15] + tj[16] * qi[16] + tj[17] * qi[17]
-    //      + tj[18] * qi[18] + tj[19] * qi[19];
+#endif
 }
 
 // Calculate score between columns i and j of two HMMs (query and template)

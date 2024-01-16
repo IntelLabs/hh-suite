@@ -81,7 +81,7 @@ endif ()
 if (CMAKE_COMPILER_IS_ICC)
     # default -fp-model results in inconsistent results in profile search
     message(${CMAKE_CXX_FLAGS})
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -o3 -fp-model fast=2 -qopenmp -lmkl_rt")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -o3 -fp-model precise -qopenmp -lmkl_rt")
 endif ()
 
 if (X86)
