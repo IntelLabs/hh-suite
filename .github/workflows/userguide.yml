@@ -1,4 +1,5 @@
 name: Wiki PDF
+permissions: {}
 
 on:
   gollum
