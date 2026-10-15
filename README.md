@@ -1,3 +1,10 @@
+> [!WARNING]
+> **THIS PROJECT IS ARCHIVED**  
+> Intel will not provide or guarantee development of or support for this project,
+> including but not limited to, maintenance, bug fixes, new releases or updates.
+>
+> Patches to this project are no longer accepted by Intel.  
+
 # compilation and setup guide of HH-suite3 optimized on Intel Xeon CPU
 
 This repo is modified based on AVX2/AVX512 intrinsics to enable acceleration on Intel Xeon CPU.
